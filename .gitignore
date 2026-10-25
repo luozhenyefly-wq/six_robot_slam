@@ -1,0 +1,47 @@
+# 编译产物 (colcon)
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# C/C++ 编译产物
+*.o
+*.ko
+*.so
+*.a
+*.mod
+*.mod.c
+*.cmd
+modules.order
+Module.symvers
+
+# 编辑器 / IDE
+.vscode/*.log
+.idea/
+*.swp
+*~
+
+# 调试与备份文件
+*.bak
+*.bak.*
+*.pyarchived
+*.orig
+*.rej
+.trash*/
+.trash_*/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 录制的数据 / 临时输出
+*.bag
+*.db3
+*.mcap
+*.pcap
+/tmp/

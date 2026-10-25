@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/ros/humble/include/**"
+            ],
+            "defines": [],
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-arm64"
+        }
+    ],
+    "version": 4
+}

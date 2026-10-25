@@ -1,0 +1,100 @@
+# =============================================================
+# EKF 配置 (robot_localization ekf_node)
+#
+# 数据源:
+#   odom0 = /odom      来自 uart_imu 节点 (足式里程 Δd 积分出的 x/y + yaw)
+#   imu0  = /imu/data  来自 uart_imu 节点 (陀螺仪 yaw + vyaw)
+#
+# 输出: /odometry/filtered + TF: odom -> base_footprint
+#
+# TF 链(每段唯一发布者):
+#   odom --(EKF)--> base_footprint --(静态TF, z=0.06)--> base_link --(静态TF)--> laser_link
+#
+# 运行:
+#   ros2 run robot_localization ekf_node --ros-args --params-file <此文件>
+#   或 ros2 launch robot_bringup localization.launch.py
+# =============================================================
+ekf_filter_node:
+  ros__parameters:
+    frequency: 30.0                 # 滤波输出频率 Hz
+    sensor_timeout: 0.3
+    two_d_mode: true                # 平面运动: 忽略 z/roll/pitch (足式晃动大, 2D 更干净)
+
+    publish_tf: true                # ☆ 由 EKF 发布 odom -> base_footprint
+    publish_acceleration: false
+
+    # ---- 坐标系 (REP-105) ----
+    map_frame: map                  # 本节点不发布 map->odom (由 SLAM/AMCL 发)
+    odom_frame: odom                # EKF 的世界系
+    base_link_frame: base_footprint # ☆ EKF 直接发到 base_footprint
+    world_frame: odom               # = odom_frame => 发 odom->base_footprint
+
+    # ================= odom0: 足式里程 (/odom) =================
+    odom0: /odom
+    # 变量顺序: x, y, z, roll, pitch, yaw, vx, vy, vz, vroll, vpitch, vyaw, ax, ay, az
+    # 只用: x, y, yaw  (z/roll/pitch 不可信; 速度没估, 不用)
+    odom0_config: [true,  true,  false,
+                   false, false, true,
+                   false, false, false,
+                   false, false, false,
+                   false, false, false]
+    odom0_queue_size: 5
+    odom0_nodelay: false
+    odom0_differential: false       # ☆ false: 用绝对位姿, EKF 自己维护连续状态
+    odom0_relative: false
+    odom0_pose_rejection_threshold: 5.0
+    odom0_twist_rejection_threshold: 1.0
+
+    # ================= imu0: 陀螺仪 (/imu/data) =================
+    imu0: /imu/data
+    # 只用: yaw (姿态) + vyaw (角速度) —— 没有加速度计, 不碰线性加速度
+    imu0_config: [false, false, false,
+                  false, false, true,      # yaw
+                  false, false, false,
+                  false, false, true,      # vyaw
+                  false, false, false]     # 无 accel
+    imu0_queue_size: 5
+    imu0_nodelay: false
+    imu0_differential: false
+    imu0_relative: false            # yaw 是绝对角, 不必相对
+    imu0_pose_rejection_threshold: 0.8
+    imu0_twist_rejection_threshold: 0.8
+    imu0_linear_acceleration_rejection_threshold: 0.8
+    imu0_remove_gravitational_acceleration: false   # 无加速度计, 无重力可去
+
+    # ---- 过程噪声 (默认值, 先跑通再调) ----
+    process_noise_covariance: [0.05, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.05, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.06, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.03, 0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.03, 0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.06, 0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.025, 0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.025, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.04, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.01, 0.0,    0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.01, 0.0,    0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.02, 0.0,    0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.01, 0.0,    0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.01, 0.0,
+                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.015]
+
+    # ---- 初始估计协方差 (默认值) ----
+    initial_estimate_covariance: [1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9, 0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-9,  0.0,     0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     1e-9,  0.0,     0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     1e-9,  0.0,    0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     1e-9, 0.0,    0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1e-9, 0.0,
+                                  0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1e-9]
+
+    print_diagnostics: true
+    debug: false

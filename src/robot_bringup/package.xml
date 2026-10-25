@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>robot_bringup</name>
+  <version>0.0.0</version>
+  <description>
+    机器人总启动包(薄包装): 汇总 EKF / SLAM / Nav2 的 launch 与参数。
+    算法本体使用官方包(robot_localization / slam_toolbox / nav2), 本包只放 launch + yaml。
+  </description>
+  <maintainer email="root@todo.todo">root</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- 运行期依赖: 官方包本体 -->
+  <exec_depend>robot_localization</exec_depend>
+  <exec_depend>slam_toolbox</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+
+  <!-- 本包自己 launch 里 include 的其他包 -->
+  <exec_depend>uart_imu</exec_depend>
+  <exec_depend>lslidar_driver</exec_depend>
+
+  <!-- launch 用到的 Python 依赖 -->
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>xacro</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
