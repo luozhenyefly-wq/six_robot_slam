@@ -3,7 +3,61 @@
 > 六足机器人（six_robot）的 **Linux 上位机 ROS 2 程序** —— 激光雷达 + 串口 IMU/里程计的
 > SLAM 建图与定位框架，运行于 D-Robotics RDK X5（aarch64 / Ubuntu 22.04 / ROS 2 Humble）。
 
-📦 下位机（STM32）固件与硬件工程：[luozhenyefly-wq/six_robot](https://github.com/luozhenyefly-wq/six_robot)
+---
+
+## 与 six_robot 仓库的关系
+
+本项目是六足机器人系统的**两个仓库之一**，与下位机仓库
+[**luozhenyefly-wq/six_robot**](https://github.com/luozhenyefly-wq/six_robot) 配套使用：
+
+```
+                    ┌─────────────────────────────────────────┐
+                    │   luozhenyefly-wq/six_robot             │
+                    │   下位机仓库                             │
+                    │   STM32 固件 / 硬件设计 / 机械结构       │
+                    └───────────────────┬─────────────────────┘
+                                        │ 串口 UART (115200 8N1)
+                                        │ 0xAA | yaw | vyaw | odom | 0xBB
+                                        ▼
+                    ┌─────────────────────────────────────────┐
+                    │   luozhenyefly-wq/six_robot_slam        │
+                    │   本仓库 · 上位机                       │
+                    │   ROS 2 SLAM / 定位 / 导航              │
+                    └─────────────────────────────────────────┘
+```
+
+**两者通过一根串口线连接，由下位机单向上报传感器数据，本仓库只读不写。**
+
+### 分工
+
+| 维度 | `six_robot`（下位机） | `six_robot_slam`（本仓库 · 上位机） |
+|---|---|---|
+| **软件** | STM32 固件（C / HAL） | ROS 2 节点（C++ / Python） |
+| **运行平台** | STM32 微控制器（裸机 / RTOS） | RDK X5，Ubuntu 22.04 |
+| **核心职责** | 电机控制、步态解算、IMU 采集、里程累加 | 传感器接入、多源融合、SLAM、导航 |
+| **硬件内容** | PCB、原理图、机械结构、装配说明 | — |
+| **对外输出** | 串口数据帧（yaw / vyaw / 里程） | ROS 2 话题 / TF / 地图 |
+| **实时性要求** | **硬实时**（步态周期不能抖） | 软实时（建图慢一点不影响行走） |
+| **能否独立工作** | ✅ 可独立行走（不带建图也能遥控） | ❌ 依赖下位机提供 IMU 与里程 |
+
+### 数据流向（单向）
+
+```
+下位机 STM32  ──串口帧──▶  uart_imu 节点  ──▶  /imu/data + /odom
+                                                    │
+                                  激光雷达 ──▶ /scan │
+                                                    ▼
+                                          EKF 融合 ──▶ SLAM 建图 ──▶ /map
+```
+
+**为什么不放在一个仓库里**
+
+两边**工具链、编译方式、发布节奏完全不同**：STM32 用 Keil / CubeIDE 编译烧录，
+本仓库用 `colcon build`；改步态参数不需要动上位机，改 SLAM 参数也不需要重烧固件。
+分仓可以各自独立迭代，互不产生构建噪声。
+
+**唯一的耦合点是串口协议**。协议变更时**两个仓库必须同步更新**，字段定义见下文
+[硬件依赖](#硬件依赖) 与 [docs/01_overview.md](docs/01_overview.md)。
 
 ---
 
@@ -13,7 +67,7 @@
 
 - 读取 **镭神 N10-P 激光雷达** → 发布 `/scan`
 - 读取 **STM32 下位机串口帧**（yaw / 偏航角速度 / 里程增量）→ 发布 `/imu/data` 与 `/odom`
-- 用 **robot_localization (EKF)** 融合 IMU 与轮/足式里程计 → 发布 `odom → base_footprint` TF
+- 用 **robot_localization (EKF)** 融合 IMU 与足式里程计 → 发布 `odom → base_footprint` TF
 - 用 **slam_toolbox** 做 2D 激光 SLAM → 发布 `map → odom` TF 与 `/map` 栅格地图
 - 预留 **Nav2** 导航接口（launch 已就位，参数待补）
 
@@ -132,10 +186,13 @@ ros2 run nav2_map_server map_saver_cli -f ~/maps/my_map
 
 ## 相关仓库
 
-| 仓库 | 内容 |
-|---|---|
-| [**six_robot**](https://github.com/luozhenyefly-wq/six_robot) | 六足机器人下位机固件、硬件设计、机械结构 |
-| **six_robot_slam**（本仓库） | 上位机 ROS 2 SLAM 程序 |
+| 仓库 | 角色 | 内容 |
+|---|---|---|
+| [**six_robot**](https://github.com/luozhenyefly-wq/six_robot) | 下位机 | STM32 固件、PCB 硬件设计、机械结构 |
+| **six_robot_slam**（本仓库） | 上位机 | ROS 2 传感器接入、EKF 融合、SLAM、导航 |
+
+两个仓库合起来才是完整的六足机器人系统。关系与分工详见上文
+[与 six_robot 仓库的关系](#与-six_robot-仓库的关系)。
 
 ---
 
