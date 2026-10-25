@@ -65,7 +65,7 @@ source ~/robot_ws/install/setup.bash
 rviz2 -d ~/robot_ws/src/robot_bringup/config/slam.rviz
 ```
 
-**rviz 配置要点**(详见 01_environment.md §5):
+**rviz 配置要点**(详见 01_overview.md §9 与 02_environment.md §6):
 
 - LaserScan `/scan` → Reliability **Best Effort**
 - Map `/map` → Durability **Transient Local**
@@ -122,7 +122,7 @@ ros2 run tf2_ros tf2_echo map base_footprint
 
 1. 先停下,不要继续走
 2. 看 rviz 里 `map → odom` TF 是否在跳
-3. 检查 `/odom` 是否漂(见 04_troubleshooting.md)
+3. 检查 `/odom` 是否漂(见 05_troubleshooting.md)
 
 ---
 

@@ -51,10 +51,11 @@ robot_ws/
 │   └── robot_navigation2/    地图与导航资源（导航未启用）
 │
 ├── docs/
-│   ├── 01_environment.md     环境配置：ROS 2 Humble + slam_toolbox + rviz
-│   ├── 02_build.md           编译说明
-│   ├── 03_run_slam.md        建图运行流程
-│   └── 04_troubleshooting.md 常见问题排查
+│   ├── 01_overview.md        项目说明：架构 / TF 树 / 话题 / 硬件 / 协议
+│   ├── 02_environment.md     环境配置：ROS 2 Humble + slam_toolbox + rviz
+│   ├── 03_build.md           编译说明
+│   ├── 04_run_slam.md        建图运行流程
+│   └── 05_troubleshooting.md 常见问题排查
 │
 ├── LICENSE                   MIT（第三方包除外）
 └── README.md
@@ -65,7 +66,7 @@ robot_ws/
 ## 快速开始
 
 ```bash
-# 1. 准备环境（详见 docs/01_environment.md）
+# 1. 准备环境（详见 docs/02_environment.md）
 sudo apt install ros-humble-desktop ros-humble-robot-localization \
                  ros-humble-slam-toolbox ros-humble-nav2-bringup
 
@@ -151,4 +152,4 @@ ros2 run nav2_map_server map_saver_cli -f ~/maps/my_map
 
 本项目在 RDK X5 上开发与验证，板端算力有限（3 GB 内存），部分配置针对该平台做了
 取舍（如限制雷达量程、降低地图更新频率）。详细取舍与踩坑记录见
-[docs/04_troubleshooting.md](docs/04_troubleshooting.md)。
+[docs/05_troubleshooting.md](docs/05_troubleshooting.md)。

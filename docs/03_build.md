@@ -2,7 +2,7 @@
 
 ## 前置条件
 
-已完成 [01_environment.md](01_environment.md) 中的环境配置,并且:
+已完成 [02_environment.md](02_environment.md) 中的环境配置,并且:
 
 ```bash
 source /opt/ros/humble/setup.bash
